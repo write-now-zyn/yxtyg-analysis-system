@@ -1,0 +1,66 @@
+import Vue from 'vue'
+import VueRouter from 'vue-router'
+
+Vue.use(VueRouter)
+
+const routes = [
+  {
+    path: '/',
+    redirect: '/dashboard'
+  },
+  {
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: () => import('../views/Dashboard.vue'),
+    meta: { title: '月度看板' }
+  },
+  {
+    path: '/review',
+    name: 'Review',
+    component: () => import('../views/Review.vue'),
+    meta: { title: '评审统计' }
+  },
+  {
+    path: '/training',
+    name: 'Training',
+    component: () => import('../views/Training.vue'),
+    meta: { title: '转培上报' }
+  },
+  {
+    path: '/experimenter',
+    name: 'Experimenter',
+    component: () => import('../views/Experimenter.vue'),
+    meta: { title: '体验官管理' }
+  },
+  {
+    path: '/workorder',
+    name: 'WorkOrder',
+    component: () => import('../views/WorkOrder.vue'),
+    meta: { title: '需求提单' }
+  },
+  {
+    path: '/model-config',
+    name: 'ModelConfig',
+    component: () => import('../views/ModelConfig.vue'),
+    meta: { title: '大模型设置' }
+  },
+  {
+    path: '/agent-config',
+    name: 'AgentConfig',
+    component: () => import('../views/AgentConfig.vue'),
+    meta: { title: '智能体参数' }
+  }
+]
+
+const router = new VueRouter({
+  routes
+})
+
+router.beforeEach((to, from, next) => {
+  if (to.meta.title) {
+    document.title = to.meta.title + ' - 一线体验官专项数据分析系统'
+  }
+  next()
+})
+
+export default router

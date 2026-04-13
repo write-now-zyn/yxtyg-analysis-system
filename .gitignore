@@ -1,0 +1,11 @@
+.DS_Store
+
+.idea/
+.vscode/
+
+logs/
+
+yxtyg-admin/target/
+yxtyg-web/node_modules/
+yxtyg-web/dist/
+
