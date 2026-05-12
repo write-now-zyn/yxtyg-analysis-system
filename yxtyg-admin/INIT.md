@@ -2,7 +2,7 @@
 
 ## 1. 项目概览
 
-- 技术栈：Spring Boot 2.7.18、MyBatis Plus 3.5.3.1、MySQL 8、Redis、EasyExcel
+- 技术栈：Spring Boot 2.7.18、MyBatis Plus 3.5.3.1、MySQL 8、EasyExcel
 - 启动类：`src/main/java/com/jscm/yxtyg/YxtygApplication.java`
 - 默认端口：`8080`
 - 主要职责：体验官管理、工单导入/查询、评审纪要、转培上报、AI 解析、看板统计
@@ -12,8 +12,6 @@
 - JDK `1.8`
 - Maven `3.6+`
 - MySQL `8.x`
-- Redis `6.x+`
-
 ## 3. 关键配置
 
 配置文件：`src/main/resources/application.yml`
@@ -23,7 +21,6 @@
 - MySQL：`jdbc:mysql://127.0.0.1:3306/yxtyg_db`
 - 用户名：`root`
 - 密码：`123456`
-- Redis：`172.26.55.83:6379`
 - AI 服务：`http://gugang.i234.me:11868`
 
 建议先按本地环境修改以下项：
@@ -31,8 +28,6 @@
 - `spring.datasource.url`
 - `spring.datasource.username`
 - `spring.datasource.password`
-- `spring.redis.host`
-- `spring.redis.port`
 - `ai.ollama.url`
 
 ## 4. 数据库初始化
@@ -63,6 +58,7 @@
 - `docs/add_reporter_field.sql`
 - `docs/update_model_settings.sql` 或 `docs/update_model_settings_utf8.sql`
 - `docs/update_agent_user_prompt.sql`
+- `src/main/resources/sql/add_embedding_config.sql`
 
 ## 5. 启动步骤
 
@@ -94,11 +90,13 @@ java -jar target/yxtyg-admin-1.0.0.jar
 - `/api/review`：评审纪要
 - `/api/training`：转培上报、截图读取
 - `/api/model-config`：模型配置
+- `/api/embedding-config`：向量化模型配置
 - `/api/agent-config`：智能体参数
 - `/api/ai`：AI 解析接口
 
 ## 8. 已知注意点
 
-- 当前 `application.yml` 里的 Redis 和 AI 地址不是标准本地地址，直接启动前大概率需要改
+- 当前 `application.yml` 里的 AI 地址不是标准本地地址，直接启动前大概率需要改
+- 向量检索、向量同步、智能推荐依赖“向量化模型配置”，首次使用前需先在页面中配置默认向量化模型
 - `docs/update_agent_user_prompt.sql` 里默认值写的是 `{{content}}`，而代码替换占位符用的是 `{content}`，初始化后建议手动核对智能体配置里的提示词
 - 如果前端用到截图上传，数据库 `max_allowed_packet` 不够会直接失败

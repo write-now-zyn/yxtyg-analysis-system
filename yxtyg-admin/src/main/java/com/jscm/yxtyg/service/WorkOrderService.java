@@ -34,8 +34,9 @@ public interface WorkOrderService extends IService<WorkOrder> {
     /**
      * 导入工单Excel
      * 导入规则：
-     * 1、当前导入工单如果数据库中已存在相同流水号且相同状态的，就跳过，不更新数据库
-     * 2、如果导入文件中流水号在数据库中存在，但是状态不一致，那就按照流水号更新全部其它字段
+     * 1、按 orderNo 识别工单快照
+     * 2、status、solutionHistoryStr、handlerName 或其他关键字段变化时更新
+     * 3、满足可向量化条件时自动同步向量索引
      *
      * @param file Excel文件
      * @return 导入结果

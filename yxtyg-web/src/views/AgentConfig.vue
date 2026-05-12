@@ -35,7 +35,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="使用模型" prop="modelName">
-          <el-select v-model="form.modelName" placeholder="请选择模型" filterable style="width: 100%">
+          <el-select v-model="form.modelName" placeholder="请选择或输入模型名称" filterable allow-create default-first-option style="width: 100%">
             <el-option v-for="model in availableModels" :key="model" :label="model" :value="model" />
           </el-select>
         </el-form-item>

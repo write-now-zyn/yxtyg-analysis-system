@@ -1,19 +1,17 @@
 package com.jscm.yxtyg.service.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jscm.yxtyg.entity.AgentConfig;
 import com.jscm.yxtyg.entity.ModelConfig;
-import com.jscm.yxtyg.service.AgentConfigService;
-import com.jscm.yxtyg.service.ModelConfigService;
 import com.jscm.yxtyg.service.AiService;
+import com.jscm.yxtyg.service.AgentConfigService;
+import com.jscm.yxtyg.service.LlmClientService;
+import com.jscm.yxtyg.service.ModelConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.*;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -26,7 +24,6 @@ import java.util.*;
 public class AiServiceImpl implements AiService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private RestTemplate restTemplate;
 
     @Autowired
     private ModelConfigService modelConfigService;
@@ -34,15 +31,8 @@ public class AiServiceImpl implements AiService {
     @Autowired
     private AgentConfigService agentConfigService;
 
-    private RestTemplate getRestTemplate() {
-        if (restTemplate == null) {
-            SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-            factory.setConnectTimeout(300000);
-            factory.setReadTimeout(300000);
-            restTemplate = new RestTemplate(factory);
-        }
-        return restTemplate;
-    }
+    @Autowired
+    private LlmClientService llmClientService;
 
     private static final String DEFAULT_SYSTEM_PROMPT = 
         "从文本中提取与会人员的姓名和地市。\n" +
@@ -121,9 +111,8 @@ public class AiServiceImpl implements AiService {
                 }
             }
             
-            return callModel(defaultConfig.getBaseUrl(), defaultConfig.getApiKey(), modelName, 
-                           systemPrompt, "{content}", text, new BigDecimal("0.7"), new BigDecimal("0.9"), 
-                           new BigDecimal("1.1"), 2048);
+            return callModel(defaultConfig, modelName, systemPrompt, "{content}", text,
+                    new BigDecimal("0.7"), new BigDecimal("0.9"), new BigDecimal("1.1"), 2048);
         } catch (Exception e) {
             log.error("使用默认配置解析失败", e);
             return Collections.emptyList();
@@ -147,7 +136,7 @@ public class AiServiceImpl implements AiService {
             }
             
             String modelName = agentConfig.getModelName();
-            if (modelName == null || modelName.isEmpty()) {
+            if (!StringUtils.hasText(modelName)) {
                 if (modelConfig.getModels() != null && !modelConfig.getModels().isEmpty()) {
                     try {
                         List<String> models = objectMapper.readValue(modelConfig.getModels(), new TypeReference<List<String>>() {});
@@ -161,12 +150,12 @@ public class AiServiceImpl implements AiService {
             }
             
             String systemPrompt = agentConfig.getSystemPrompt();
-            if (systemPrompt == null || systemPrompt.isEmpty()) {
+            if (!StringUtils.hasText(systemPrompt)) {
                 systemPrompt = DEFAULT_SYSTEM_PROMPT;
             }
             
             String userPrompt = agentConfig.getUserPrompt();
-            if (userPrompt == null || userPrompt.isEmpty()) {
+            if (!StringUtils.hasText(userPrompt)) {
                 userPrompt = "{content}";
             }
             
@@ -182,33 +171,19 @@ public class AiServiceImpl implements AiService {
             Integer maxTokens = agentConfig.getMaxTokens();
             if (maxTokens == null) maxTokens = 2048;
             
-            return callModel(modelConfig.getBaseUrl(), modelConfig.getApiKey(), modelName, 
-                           systemPrompt, userPrompt, text, temperature, topP, repetitionPenalty, maxTokens);
+            return callModel(modelConfig, modelName, systemPrompt, userPrompt, text,
+                    temperature, topP, repetitionPenalty, maxTokens);
         } catch (Exception e) {
             log.error("使用智能体配置解析失败", e);
             return Collections.emptyList();
         }
     }
 
-    private List<Map<String, String>> callModel(String baseUrl, String apiKey, String modelName,
-                                                  String systemPrompt, String userPrompt, String text,
-                                                  BigDecimal temperature, BigDecimal topP,
-                                                  BigDecimal repetitionPenalty, Integer maxTokens) {
+    private List<Map<String, String>> callModel(ModelConfig modelConfig, String modelName,
+                                                String systemPrompt, String userPrompt, String text,
+                                                BigDecimal temperature, BigDecimal topP,
+                                                BigDecimal repetitionPenalty, Integer maxTokens) {
         try {
-            Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("model", modelName);
-            requestBody.put("stream", false);
-            requestBody.put("temperature", temperature.doubleValue());
-            requestBody.put("top_p", topP.doubleValue());
-            
-            if (repetitionPenalty != null) {
-                requestBody.put("repeat_penalty", repetitionPenalty.doubleValue());
-            }
-            
-            if (maxTokens != null) {
-                requestBody.put("num_predict", maxTokens);
-            }
-            
             List<Map<String, String>> messages = new ArrayList<>();
             
             Map<String, String> systemMessage = new HashMap<>();
@@ -221,35 +196,16 @@ public class AiServiceImpl implements AiService {
             userMessage.put("role", "user");
             userMessage.put("content", userContent);
             messages.add(userMessage);
-            
-            requestBody.put("messages", messages);
-            
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            if (apiKey != null && !apiKey.isEmpty()) {
-                headers.set("Authorization", "Bearer " + apiKey);
-            }
-            
-            HttpEntity<String> entity = new HttpEntity<>(objectMapper.writeValueAsString(requestBody), headers);
-            
-            log.info("调用模型API: {}/api/chat, 模型: {}", baseUrl, modelName);
+
+            log.info("调用模型API: provider={}, baseUrl={}, model={}",
+                    modelConfig.getProvider(), modelConfig.getBaseUrl(), modelName);
             log.info("系统提示词：{}", systemPrompt);
             log.info("用户提示词：{}", userContent);
-            
-            ResponseEntity<String> response = getRestTemplate().postForEntity(
-                baseUrl + "/api/chat", 
-                entity, 
-                String.class
-            );
-            
-            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                JsonNode root = objectMapper.readTree(response.getBody());
-                String content = root.path("message").path("content").asText();
-                
-                log.info("AI返回内容：{}", content);
-                
-                return parseJsonResult(content);
-            }
+
+            String content = llmClientService.chat(modelConfig, modelName, messages, temperature, topP,
+                    repetitionPenalty, maxTokens, 300000);
+            log.info("AI返回内容：{}", content);
+            return parseJsonResult(content);
         } catch (Exception e) {
             log.error("调用模型API失败", e);
         }

@@ -2,7 +2,7 @@
   <div id="app">
     <el-container style="height: 100vh">
       <!-- 侧边栏 -->
-      <el-aside width="200px" style="background-color: #304156">
+      <el-aside width="200px" style="background-color: #304156" overflow-y="hidden">
         <div class="logo">
           <span>一线体验官</span>
         </div>
@@ -13,6 +13,23 @@
           active-text-color="#409EFF"
           router
         >
+
+          <!-- 智能分单 -->
+          <el-submenu index="smart">
+            <template slot="title">
+              <i class="el-icon-magic-stick"></i>
+              <span>智能分单</span>
+            </template>
+            <el-menu-item index="/smart-recommend">
+              <i class="el-icon-s-custom"></i>
+              <span>智能推荐</span>
+            </el-menu-item>
+            <el-menu-item index="/vector-search">
+              <i class="el-icon-search"></i>
+              <span>向量搜索</span>
+            </el-menu-item>
+          </el-submenu>
+
           <!-- 数据看板 -->
           <el-submenu index="dashboard">
             <template slot="title">
@@ -58,6 +75,10 @@
             <el-menu-item index="/model-config">
               <i class="el-icon-connection"></i>
               <span>大模型设置</span>
+            </el-menu-item>
+            <el-menu-item index="/embedding-config">
+              <i class="el-icon-share"></i>
+              <span>向量化模型</span>
             </el-menu-item>
             <el-menu-item index="/agent-config">
               <i class="el-icon-cpu"></i>

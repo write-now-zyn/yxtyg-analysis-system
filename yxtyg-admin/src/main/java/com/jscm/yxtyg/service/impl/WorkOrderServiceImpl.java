@@ -10,6 +10,7 @@ import com.jscm.yxtyg.entity.SolutionHistory;
 import com.jscm.yxtyg.entity.WorkOrder;
 import com.jscm.yxtyg.mapper.WorkOrderMapper;
 import com.jscm.yxtyg.service.SolutionHistoryService;
+import com.jscm.yxtyg.service.VectorStoreService;
 import com.jscm.yxtyg.service.WorkOrderService;
 import com.jscm.yxtyg.util.WorkOrderExcelParser;
 import com.jscm.yxtyg.vo.WorkOrderDetailVO;
@@ -27,6 +28,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -41,6 +43,9 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
 
     @Autowired
     private WorkOrderExcelParser excelParser;
+
+    @Autowired
+    private VectorStoreService vectorStoreService;
 
     @Override
     public PageResult<WorkOrderListVO> queryPage(WorkOrderQueryDTO queryDTO) {
@@ -129,6 +134,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         int updateCount = 0;
         int skipCount = 0;
         List<String> failMessages = new ArrayList<>();
+        List<Long> syncWorkOrderIds = new ArrayList<>();
 
         // 解析Excel文件
         WorkOrderExcelParser.ParseResult parseResult = excelParser.parse(file);
@@ -150,29 +156,22 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
                 // 查询是否存在相同流水号的工单
                 LambdaQueryWrapper<WorkOrder> wrapper = new LambdaQueryWrapper<>();
                 wrapper.eq(WorkOrder::getOrderNo, orderNo);
-                WorkOrder existingOrder = this.getOne(wrapper);
+                wrapper.orderByDesc(WorkOrder::getUpdatedAt).last("LIMIT 1");
+                WorkOrder existingOrder = this.getOne(wrapper, false);
 
                 if (existingOrder != null) {
-                    // 规则1：相同流水号且相同状态，跳过
-                    if (existingOrder.getStatus() != null && existingOrder.getStatus().equals(status)) {
-                        log.debug("工单已存在且状态相同，跳过：{}, 状态：{}", orderNo, status);
+                    if (!hasWorkOrderChanged(existingOrder, dto)) {
+                        log.debug("工单无变化，跳过：{}", orderNo);
                         skipCount++;
                         continue;
                     }
-                    
-                    // 规则2：流水号存在但状态不同，更新全部字段
-                    log.debug("工单存在但状态不同，更新：{}, 原状态：{}，新状态：{}", orderNo, existingOrder.getStatus(), status);
+
+                    log.debug("工单存在且有变化，更新：{}, 原状态：{}，新状态：{}", orderNo, existingOrder.getStatus(), status);
                     updateWorkOrderFromDTO(existingOrder, dto);
                     this.updateById(existingOrder);
-                    
-                    // 删除旧的解决方案历史，重新解析保存
-                    solutionHistoryService.deleteByWorkOrderId(existingOrder.getId());
-                    List<SolutionHistory> historyList = excelParser.parseSolutionHistory(
-                            dto.getSolutionHistoryStr(), orderNo);
-                    if (!historyList.isEmpty()) {
-                        historyList.forEach(h -> h.setWorkOrderId(existingOrder.getId()));
-                        solutionHistoryService.saveBatch(historyList);
-                    }
+
+                    refreshSolutionHistory(existingOrder.getId(), orderNo, dto.getSolutionHistoryStr());
+                    syncWorkOrderIds.add(existingOrder.getId());
                     updateCount++;
                 } else {
                     // 新增工单
@@ -182,13 +181,8 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
                     newOrder.setUpdatedAt(LocalDateTime.now());
                     this.save(newOrder);
 
-                    // 解析并保存解决方案历史
-                    List<SolutionHistory> historyList = excelParser.parseSolutionHistory(
-                            dto.getSolutionHistoryStr(), orderNo);
-                    if (!historyList.isEmpty()) {
-                        historyList.forEach(h -> h.setWorkOrderId(newOrder.getId()));
-                        solutionHistoryService.saveBatch(historyList);
-                    }
+                    refreshSolutionHistory(newOrder.getId(), orderNo, dto.getSolutionHistoryStr());
+                    syncWorkOrderIds.add(newOrder.getId());
                     insertCount++;
                     log.debug("新增工单：{}", orderNo);
                 }
@@ -206,6 +200,8 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         result.put("failMessages", failMessages);
         result.put("message", String.format("导入完成！新增%d条，更新%d条，跳过%d条，失败%d条", 
                 insertCount, updateCount, skipCount, failMessages.size()));
+
+        runAfterCommit(() -> syncWorkOrderIds.forEach(vectorStoreService::syncWorkOrderById));
 
         log.info("导入工单完成，新增：{}，更新：{}，跳过：{}，失败：{}", 
                 insertCount, updateCount, skipCount, failMessages.size());
@@ -236,10 +232,14 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     @Transactional(rollbackFor = Exception.class)
     public void deleteWorkOrder(Long id) {
         log.info("删除工单，ID：{}", id);
+        WorkOrder workOrder = this.getById(id);
         // 先删除关联的解决方案历史
         solutionHistoryService.deleteByWorkOrderId(id);
         // 再删除工单
         this.removeById(id);
+        if (workOrder != null) {
+            runAfterCommit(() -> vectorStoreService.removeByOrderNo(workOrder.getOrderNo()));
+        }
         log.info("删除工单成功，ID：{}", id);
     }
 
@@ -247,10 +247,47 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     @Transactional(rollbackFor = Exception.class)
     public void batchDeleteWorkOrder(List<Long> ids) {
         log.info("批量删除工单，共{}条", ids.size());
+        List<WorkOrder> workOrders = this.listByIds(ids);
         for (Long id : ids) {
             solutionHistoryService.deleteByWorkOrderId(id);
         }
         this.removeByIds(ids);
+        runAfterCommit(() -> workOrders.forEach(item -> vectorStoreService.removeByOrderNo(item.getOrderNo())));
         log.info("批量删除工单成功");
+    }
+
+    private boolean hasWorkOrderChanged(WorkOrder workOrder, WorkOrderExcelDTO dto) {
+        return !Objects.equals(workOrder.getDeclarePhone(), dto.getDeclarePhone())
+                || !Objects.equals(workOrder.getHandleUnit(), dto.getHandleUnit())
+                || !Objects.equals(workOrder.getHandlerName(), dto.getHandlerName())
+                || !Objects.equals(workOrder.getCity(), dto.getCity())
+                || !Objects.equals(workOrder.getCreateTimeStr(), dto.getCreateTimeStr())
+                || !Objects.equals(workOrder.getInitiatorName(), dto.getInitiatorName())
+                || !Objects.equals(workOrder.getHandleSatisfactionScore(), dto.getHandleSatisfactionScore())
+                || !Objects.equals(workOrder.getDispatchSatisfactionScore(), dto.getDispatchSatisfactionScore())
+                || !Objects.equals(workOrder.getUnsatisfiedReason(), dto.getUnsatisfiedReason())
+                || !Objects.equals(workOrder.getStatus(), dto.getStatus())
+                || !Objects.equals(workOrder.getSolutionHistoryStr(), dto.getSolutionHistoryStr())
+                || !Objects.equals(workOrder.getContent(), dto.getContent());
+    }
+
+    private void refreshSolutionHistory(Long workOrderId, String orderNo, String solutionHistoryStr) {
+        solutionHistoryService.deleteByWorkOrderId(workOrderId);
+        List<SolutionHistory> historyList = excelParser.parseSolutionHistory(solutionHistoryStr, orderNo);
+        if (!historyList.isEmpty()) {
+            historyList.forEach(h -> h.setWorkOrderId(workOrderId));
+            solutionHistoryService.saveBatch(historyList);
+        }
+    }
+
+    private void runAfterCommit(Runnable runnable) {
+        org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                new org.springframework.transaction.support.TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        runnable.run();
+                    }
+                }
+        );
     }
 }

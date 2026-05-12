@@ -45,10 +45,28 @@ const routes = [
     meta: { title: '大模型设置' }
   },
   {
+    path: '/embedding-config',
+    name: 'EmbeddingConfig',
+    component: () => import('../views/EmbeddingConfig.vue'),
+    meta: { title: '向量化模型配置' }
+  },
+  {
     path: '/agent-config',
     name: 'AgentConfig',
     component: () => import('../views/AgentConfig.vue'),
     meta: { title: '智能体参数' }
+  },
+  {
+    path: '/smart-recommend',
+    name: 'SmartRecommend',
+    component: () => import('../views/SmartRecommend.vue'),
+    meta: { title: '智能推荐' }
+  },
+  {
+    path: '/vector-search',
+    name: 'VectorSearch',
+    component: () => import('../views/VectorSearch.vue'),
+    meta: { title: '向量搜索' }
   }
 ]
 

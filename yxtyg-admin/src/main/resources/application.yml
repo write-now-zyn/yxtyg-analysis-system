@@ -27,17 +27,6 @@ spring:
       idle-timeout: 30000
       max-lifetime: 1800000
       connection-timeout: 30000
-  redis:
-    host: 172.26.55.83
-    port: 6379
-    database: 0
-    timeout: 10000ms
-    lettuce:
-      pool:
-        max-active: 8
-        max-wait: -1ms
-        max-idle: 8
-        min-idle: 0
   servlet:
     multipart:
       max-file-size: 50MB
@@ -72,6 +61,7 @@ logging:
   file:
     path: ./logs
     name: ./logs/yxtyg-admin.log
+  retention-days: 10
 
 # AI配置
 ai:
@@ -79,3 +69,20 @@ ai:
     url: http://gugang.i234.me:11868
     # url: http://localhost:11434
     model: qwen3:8b
+
+recommend:
+  top-k: 10
+  max-prompt-tickets: 10
+  max-ticket-content-length: 2000
+  max-current-content-length: 500
+  max-history-content-length: 200
+  max-history-solution-length: 300
+  llm-timeout-ms: 300000
+
+vector:
+  store:
+    path: ./data/vectors
+  vectorizable-statuses:
+    - 已回复
+    - 关闭
+    - 已完成

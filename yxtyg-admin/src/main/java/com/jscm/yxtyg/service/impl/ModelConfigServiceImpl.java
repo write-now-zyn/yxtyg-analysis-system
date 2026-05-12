@@ -3,21 +3,18 @@ package com.jscm.yxtyg.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jscm.yxtyg.entity.AgentConfig;
 import com.jscm.yxtyg.entity.ModelConfig;
 import com.jscm.yxtyg.exception.BusinessException;
 import com.jscm.yxtyg.mapper.AgentConfigMapper;
 import com.jscm.yxtyg.mapper.ModelConfigMapper;
+import com.jscm.yxtyg.service.LlmClientService;
 import com.jscm.yxtyg.service.ModelConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.*;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -31,17 +28,12 @@ import java.util.stream.Collectors;
 public class ModelConfigServiceImpl extends ServiceImpl<ModelConfigMapper, ModelConfig> implements ModelConfigService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final RestTemplate restTemplate;
     
     @Autowired
     private AgentConfigMapper agentConfigMapper;
 
-    public ModelConfigServiceImpl() {
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(10000);
-        factory.setReadTimeout(30000);
-        this.restTemplate = new RestTemplate(factory);
-    }
+    @Autowired
+    private LlmClientService llmClientService;
 
     @Override
     public List<ModelConfig> listAll() {
@@ -156,34 +148,7 @@ public class ModelConfigServiceImpl extends ServiceImpl<ModelConfigMapper, Model
     @Override
     public boolean testConnection(ModelConfig config) {
         log.info("测试大模型连接，配置：{}", config.getName());
-        
-        try {
-            String testUrl = config.getBaseUrl();
-            if ("ollama".equalsIgnoreCase(config.getProvider())) {
-                testUrl = config.getBaseUrl() + "/api/tags";
-            }
-            
-            HttpHeaders headers = new HttpHeaders();
-            if (config.getApiKey() != null && !config.getApiKey().isEmpty()) {
-                headers.set("Authorization", "Bearer " + config.getApiKey());
-            }
-            
-            HttpEntity<String> entity = new HttpEntity<>(headers);
-            
-            ResponseEntity<String> response = restTemplate.exchange(
-                testUrl, 
-                HttpMethod.GET, 
-                entity, 
-                String.class
-            );
-            
-            boolean success = response.getStatusCode() == HttpStatus.OK;
-            log.info("测试连接结果：{}", success ? "成功" : "失败");
-            return success;
-        } catch (Exception e) {
-            log.error("测试连接失败", e);
-            return false;
-        }
+        return llmClientService.testConnection(config);
     }
 
     @Override
@@ -198,32 +163,7 @@ public class ModelConfigServiceImpl extends ServiceImpl<ModelConfigMapper, Model
         List<String> models = new ArrayList<>();
 
         try {
-            if ("ollama".equalsIgnoreCase(config.getProvider())) {
-                String url = config.getBaseUrl() + "/api/tags";
-
-                HttpHeaders headers = new HttpHeaders();
-                HttpEntity<String> entity = new HttpEntity<>(headers);
-
-                ResponseEntity<String> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    entity,
-                    String.class
-                );
-
-                if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                    JsonNode root = objectMapper.readTree(response.getBody());
-                    JsonNode modelsNode = root.path("models");
-                    if (modelsNode.isArray()) {
-                        for (JsonNode modelNode : modelsNode) {
-                            String modelName = modelNode.path("name").asText();
-                            if (!modelName.isEmpty()) {
-                                models.add(modelName);
-                            }
-                        }
-                    }
-                }
-            }
+            models = llmClientService.fetchModels(config);
             
             if (!models.isEmpty()) {
                 config.setModels(objectMapper.writeValueAsString(models));
