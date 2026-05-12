@@ -1,0 +1,40 @@
+:root {
+  --app-page-gap: 13px;
+  --app-card-gap: 12px;
+}
+
+.app-main {
+  background-color: #f0f2f5;
+  padding: var(--app-page-gap);
+}
+
+.page-container {
+  padding: 0;
+}
+
+.page-card {
+  margin-bottom: var(--app-card-gap);
+}
+
+.page-card:last-child {
+  margin-bottom: 0;
+}
+
+.page-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.page-card__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.page-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

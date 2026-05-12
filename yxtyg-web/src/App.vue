@@ -90,7 +90,7 @@
 
       <!-- 主内容区 -->
       <el-container>
-        <el-main style="background-color: #f0f2f5; padding: 13px">
+        <el-main class="app-main">
           <router-view />
         </el-main>
       </el-container>

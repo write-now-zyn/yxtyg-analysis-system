@@ -1,9 +1,11 @@
 <template>
   <div class="page-container">
-    <el-card>
-      <div slot="header">
-        <span>大模型设置</span>
-        <el-button type="primary" size="small" style="float: right" @click="handleAdd">新增配置</el-button>
+    <el-card class="page-card">
+      <div slot="header" class="page-card__header">
+        <span class="page-card__title">大模型设置</span>
+        <div class="page-card__actions">
+          <el-button type="primary" size="small" @click="handleAdd">新增配置</el-button>
+        </div>
       </div>
 
       <el-table :data="tableData" v-loading="loading" border stripe>
@@ -247,9 +249,6 @@ export default {
 </script>
 
 <style scoped>
-.page-container {
-  padding: 20px;
-}
 .model-list {
   display: inline-block;
   max-width: 180px;

@@ -1,8 +1,8 @@
 <template>
   <div class="page-container">
-    <el-card>
-      <div slot="header">
-        <span>智能体参数设置</span>
+    <el-card class="page-card">
+      <div slot="header" class="page-card__header">
+        <span class="page-card__title">智能体参数设置</span>
       </div>
 
       <el-table :data="tableData" v-loading="loading" border stripe>
@@ -183,9 +183,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-.page-container {
-  padding: 20px;
-}
-</style>
