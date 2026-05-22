@@ -29,7 +29,7 @@ docker compose up --build
 ## 验收材料
 
 - [完成需求清单与证据 Markdown](docs/完成需求清单与证据.md)
-- [完成需求清单与证据 Excel](docs/完成需求清单与证据.xlsx)
+- [完成需求清单与证据 Excel（标准浏览器截图版）](docs/完成需求清单与证据-标准浏览器截图.xlsx)
 - [证据截图目录](docs/evidence/)
 
 ## 已补齐能力

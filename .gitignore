@@ -9,3 +9,6 @@ yxtyg-admin/target/
 yxtyg-web/node_modules/
 yxtyg-web/dist/
 
+docs/~$*.xlsx
+docs/完成需求清单与证据.xlsx
+
