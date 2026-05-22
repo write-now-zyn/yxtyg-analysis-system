@@ -2,6 +2,8 @@ package com.jscm.yxtyg.controller;
 
 import com.jscm.yxtyg.common.Result;
 import com.jscm.yxtyg.dto.VectorContentRequestDTO;
+import com.jscm.yxtyg.security.PermissionConstants;
+import com.jscm.yxtyg.security.RequirePermissions;
 import com.jscm.yxtyg.service.RecommendService;
 import com.jscm.yxtyg.service.VectorStoreService;
 import com.jscm.yxtyg.vo.RecommendResultVO;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RestController
 @RequestMapping("/api/vector")
+@RequirePermissions(PermissionConstants.SMART_USE)
 public class VectorController {
 
     @Autowired

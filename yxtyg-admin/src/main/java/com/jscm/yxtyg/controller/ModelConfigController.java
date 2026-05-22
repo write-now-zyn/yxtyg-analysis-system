@@ -2,6 +2,8 @@ package com.jscm.yxtyg.controller;
 
 import com.jscm.yxtyg.common.Result;
 import com.jscm.yxtyg.entity.ModelConfig;
+import com.jscm.yxtyg.security.PermissionConstants;
+import com.jscm.yxtyg.security.RequirePermissions;
 import com.jscm.yxtyg.service.ModelConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +17,7 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping("/api/model-config")
+@RequirePermissions(PermissionConstants.MODEL_MANAGE)
 public class ModelConfigController {
 
     @Autowired

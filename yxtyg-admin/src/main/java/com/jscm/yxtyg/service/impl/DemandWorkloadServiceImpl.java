@@ -138,8 +138,10 @@ public class DemandWorkloadServiceImpl extends ServiceImpl<DemandWorkloadMapper,
     public DemandWorkloadVO submitFinal(Long id, FinalWorkloadDTO dto) {
         DemandWorkload workload = getVisibleDemand(id);
         CurrentUser user = AuthContext.get();
-        if (RoleConstants.PRODUCT_MANAGER.equals(user.getRoleCode())
-                && !workload.getProductManagerId().equals(user.getId())) {
+        if (!RoleConstants.PRODUCT_MANAGER.equals(user.getRoleCode())) {
+            throw new BusinessException(403, "只有产品经理可以填写最终核定工作量");
+        }
+        if (!workload.getProductManagerId().equals(user.getId())) {
             throw new BusinessException(403, "只能填写本人负责的需求");
         }
         if (STATUS_CONFIRMED.equals(workload.getStatus())) {

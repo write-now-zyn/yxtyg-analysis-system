@@ -20,7 +20,7 @@
           </el-menu-item>
 
           <!-- 智能分单 -->
-          <el-submenu index="smart">
+          <el-submenu v-if="hasPermission('smart:use')" index="smart">
             <template slot="title">
               <i class="el-icon-magic-stick"></i>
               <span>智能分单</span>
@@ -36,7 +36,7 @@
           </el-submenu>
 
           <!-- 数据看板 -->
-          <el-submenu index="dashboard">
+          <el-submenu v-if="hasPermission('dashboard:view')" index="dashboard">
             <template slot="title">
               <i class="el-icon-data-board"></i>
               <span>数据看板</span>
@@ -48,7 +48,7 @@
           </el-submenu>
 
           <!-- 数据管理 -->
-          <el-submenu index="data">
+          <el-submenu v-if="hasPermission('data:manage')" index="data">
             <template slot="title">
               <i class="el-icon-s-management"></i>
               <span>数据管理</span>
@@ -72,7 +72,7 @@
           </el-submenu>
 
           <!-- 模型设置 -->
-          <el-submenu index="model">
+          <el-submenu v-if="hasPermission('model:manage')" index="model">
             <template slot="title">
               <i class="el-icon-setting"></i>
               <span>模型设置</span>

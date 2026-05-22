@@ -316,11 +316,15 @@ INSERT INTO t_sys_permission (code, name, description) VALUES
 ('demand:remind', '催办需求', '对待填写需求发起催办'),
 ('user:manage', '用户管理', '维护系统用户'),
 ('role:manage', '角色权限管理', '维护角色权限配置'),
-('notification:view', '查看通知', '查看本人通知');
+('notification:view', '查看通知', '查看本人通知'),
+('smart:use', '智能分单', '使用智能推荐和向量搜索能力'),
+('dashboard:view', '数据看板', '查看数据看板'),
+('data:manage', '数据管理', '维护需求提单、评审、转培和体验官数据'),
+('model:manage', '模型设置', '维护大模型、向量化模型和智能体参数');
 
 INSERT INTO t_sys_role_permission (role_code, permission_code) VALUES
-('SYSTEM_ADMIN', 'demand:view'), ('SYSTEM_ADMIN', 'demand:manage'), ('SYSTEM_ADMIN', 'demand:fill'), ('SYSTEM_ADMIN', 'demand:confirm'), ('SYSTEM_ADMIN', 'demand:remind'), ('SYSTEM_ADMIN', 'user:manage'), ('SYSTEM_ADMIN', 'role:manage'), ('SYSTEM_ADMIN', 'notification:view'),
-('DEV_ADMIN', 'demand:view'), ('DEV_ADMIN', 'demand:manage'), ('DEV_ADMIN', 'demand:confirm'), ('DEV_ADMIN', 'demand:remind'), ('DEV_ADMIN', 'notification:view'),
+('SYSTEM_ADMIN', 'demand:view'), ('SYSTEM_ADMIN', 'demand:manage'), ('SYSTEM_ADMIN', 'demand:confirm'), ('SYSTEM_ADMIN', 'demand:remind'), ('SYSTEM_ADMIN', 'user:manage'), ('SYSTEM_ADMIN', 'role:manage'), ('SYSTEM_ADMIN', 'notification:view'), ('SYSTEM_ADMIN', 'smart:use'), ('SYSTEM_ADMIN', 'dashboard:view'), ('SYSTEM_ADMIN', 'data:manage'), ('SYSTEM_ADMIN', 'model:manage'),
+('DEV_ADMIN', 'demand:view'), ('DEV_ADMIN', 'demand:manage'), ('DEV_ADMIN', 'demand:confirm'), ('DEV_ADMIN', 'demand:remind'), ('DEV_ADMIN', 'notification:view'), ('DEV_ADMIN', 'smart:use'), ('DEV_ADMIN', 'dashboard:view'), ('DEV_ADMIN', 'data:manage'), ('DEV_ADMIN', 'model:manage'),
 ('PRODUCT_MANAGER', 'demand:view'), ('PRODUCT_MANAGER', 'demand:fill'), ('PRODUCT_MANAGER', 'notification:view');
 
 INSERT INTO t_sys_user (username, password, name, role_code, phone, email, status) VALUES

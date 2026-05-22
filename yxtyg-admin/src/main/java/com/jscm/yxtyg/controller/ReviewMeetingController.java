@@ -4,6 +4,8 @@ import com.jscm.yxtyg.common.PageResult;
 import com.jscm.yxtyg.common.Result;
 import com.jscm.yxtyg.dto.ReviewMeetingQueryDTO;
 import com.jscm.yxtyg.entity.ReviewMeeting;
+import com.jscm.yxtyg.security.PermissionConstants;
+import com.jscm.yxtyg.security.RequirePermissions;
 import com.jscm.yxtyg.service.ReviewMeetingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +20,7 @@ import java.time.LocalDateTime;
 @Slf4j
 @RestController
 @RequestMapping("/api/review")
+@RequirePermissions(PermissionConstants.DATA_MANAGE)
 public class ReviewMeetingController {
 
     @Autowired

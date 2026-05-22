@@ -4,6 +4,8 @@ import com.jscm.yxtyg.common.PageResult;
 import com.jscm.yxtyg.common.Result;
 import com.jscm.yxtyg.dto.UserDTO;
 import com.jscm.yxtyg.dto.UserQueryDTO;
+import com.jscm.yxtyg.security.PermissionConstants;
+import com.jscm.yxtyg.security.RequirePermissions;
 import com.jscm.yxtyg.security.RequireRoles;
 import com.jscm.yxtyg.security.RoleConstants;
 import com.jscm.yxtyg.service.SysUserService;
@@ -17,6 +19,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/users")
 @RequireRoles({RoleConstants.SYSTEM_ADMIN})
+@RequirePermissions(PermissionConstants.USER_MANAGE)
 public class UserController {
 
     @Autowired
@@ -29,6 +32,7 @@ public class UserController {
 
     @GetMapping("/product-managers")
     @RequireRoles({RoleConstants.SYSTEM_ADMIN, RoleConstants.DEV_ADMIN})
+    @RequirePermissions(PermissionConstants.DEMAND_MANAGE)
     public Result<List<UserVO>> productManagers() {
         return Result.success(sysUserService.listProductManagers());
     }

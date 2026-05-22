@@ -89,7 +89,7 @@
         </el-table-column>
         <el-table-column label="操作" width="220" fixed="right">
           <template slot-scope="scope">
-            <el-button type="text" @click="openFinal(scope.row)">填报</el-button>
+            <el-button v-if="canFillFinal(scope.row)" type="text" @click="openFinal(scope.row)">填报</el-button>
             <el-button v-if="canManageDemand" type="text" @click="handleConfirm(scope.row)">核定</el-button>
             <el-button v-if="canManageDemand" type="text" @click="openReminder(scope.row)">催办</el-button>
             <el-button v-if="canManageDemand" type="text" @click="openForm(scope.row)">编辑</el-button>
@@ -256,6 +256,9 @@ export default {
   computed: {
     canManageDemand() {
       return this.$store.getters.hasPermission('demand:manage')
+    },
+    isProductManager() {
+      return this.$store.getters.roleCode === 'PRODUCT_MANAGER'
     }
   },
   created() {
@@ -415,6 +418,9 @@ export default {
       if (status === '已填写') return ''
       if (status === '已核定') return 'success'
       return 'info'
+    },
+    canFillFinal(row) {
+      return this.isProductManager && this.$store.getters.hasPermission('demand:fill') && row.status !== '已核定'
     }
   }
 }

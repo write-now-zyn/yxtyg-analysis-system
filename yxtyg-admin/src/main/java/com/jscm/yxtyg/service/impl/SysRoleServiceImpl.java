@@ -77,6 +77,11 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
             return;
         }
         for (String permissionCode : dto.getPermissionCodes()) {
+            SysPermission permission = permissionMapper.selectOne(new LambdaQueryWrapper<SysPermission>()
+                    .eq(SysPermission::getCode, permissionCode));
+            if (permission == null) {
+                throw new BusinessException("权限不存在：" + permissionCode);
+            }
             SysRolePermission item = new SysRolePermission();
             item.setRoleCode(roleCode);
             item.setPermissionCode(permissionCode);

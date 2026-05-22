@@ -7,6 +7,8 @@ import com.jscm.yxtyg.dto.TrainingReportQueryDTO;
 import com.jscm.yxtyg.entity.TrainingRecord;
 import com.jscm.yxtyg.entity.TrainingReport;
 import com.jscm.yxtyg.mapper.TrainingRecordMapper;
+import com.jscm.yxtyg.security.PermissionConstants;
+import com.jscm.yxtyg.security.RequirePermissions;
 import com.jscm.yxtyg.service.TrainingReportService;
 import com.jscm.yxtyg.vo.TrainingReportDetailVO;
 import com.jscm.yxtyg.vo.TrainingReportVO;
@@ -28,6 +30,7 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping("/api/training")
+@RequirePermissions(PermissionConstants.DATA_MANAGE)
 public class TrainingReportController {
 
     @Resource

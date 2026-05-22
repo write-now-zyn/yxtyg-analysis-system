@@ -6,6 +6,8 @@ import com.jscm.yxtyg.common.Result;
 import com.jscm.yxtyg.dto.ExperimenterExcelDTO;
 import com.jscm.yxtyg.dto.ExperimenterQueryDTO;
 import com.jscm.yxtyg.entity.Experimenter;
+import com.jscm.yxtyg.security.PermissionConstants;
+import com.jscm.yxtyg.security.RequirePermissions;
 import com.jscm.yxtyg.service.ExperimenterService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +24,7 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping("/api/experimenter")
+@RequirePermissions(PermissionConstants.DATA_MANAGE)
 public class ExperimenterController {
 
     @Autowired

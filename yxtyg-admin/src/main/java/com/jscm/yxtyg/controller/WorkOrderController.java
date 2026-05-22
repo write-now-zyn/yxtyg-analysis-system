@@ -3,6 +3,8 @@ package com.jscm.yxtyg.controller;
 import com.jscm.yxtyg.common.PageResult;
 import com.jscm.yxtyg.common.Result;
 import com.jscm.yxtyg.dto.WorkOrderQueryDTO;
+import com.jscm.yxtyg.security.PermissionConstants;
+import com.jscm.yxtyg.security.RequirePermissions;
 import com.jscm.yxtyg.service.WorkOrderService;
 import com.jscm.yxtyg.vo.WorkOrderDetailVO;
 import com.jscm.yxtyg.vo.WorkOrderListVO;
@@ -20,6 +22,7 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequestMapping("/api/workorder")
+@RequirePermissions(PermissionConstants.DATA_MANAGE)
 public class WorkOrderController {
 
     @Autowired

@@ -130,6 +130,10 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     }
 
     private void fillUser(SysUser user, UserDTO dto) {
+        if (sysRoleService.getOne(new LambdaQueryWrapper<com.jscm.yxtyg.entity.SysRole>()
+                .eq(com.jscm.yxtyg.entity.SysRole::getCode, dto.getRoleCode()), false) == null) {
+            throw new BusinessException("角色不存在");
+        }
         user.setUsername(dto.getUsername());
         user.setName(dto.getName());
         user.setRoleCode(dto.getRoleCode());

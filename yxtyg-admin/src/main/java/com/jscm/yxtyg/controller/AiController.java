@@ -1,6 +1,8 @@
 package com.jscm.yxtyg.controller;
 
 import com.jscm.yxtyg.common.Result;
+import com.jscm.yxtyg.security.PermissionConstants;
+import com.jscm.yxtyg.security.RequirePermissions;
 import com.jscm.yxtyg.service.AiService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +17,7 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequestMapping("/api/ai")
+@RequirePermissions(PermissionConstants.DATA_MANAGE)
 public class AiController {
 
     @Autowired

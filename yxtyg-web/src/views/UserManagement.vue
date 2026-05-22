@@ -119,7 +119,7 @@ export default {
       form: this.emptyForm(),
       rules: {
         username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-        password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+        password: [{ validator: this.validatePassword, trigger: 'blur' }],
         name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
         roleCode: [{ required: true, message: '请选择角色', trigger: 'change' }],
         status: [{ required: true, message: '请选择状态', trigger: 'change' }]
@@ -157,6 +157,13 @@ export default {
     handleReset() {
       this.queryParams = { keyword: '', roleCode: '', status: '', current: 1, size: 10 }
       this.loadData()
+    },
+    validatePassword(rule, value, callback) {
+      if (!this.form.id && !value) {
+        callback(new Error('请输入密码'))
+        return
+      }
+      callback()
     },
     handleSizeChange(size) {
       this.queryParams.size = size
