@@ -1,6 +1,8 @@
 import axios from 'axios'
 import { Message, Notification } from 'element-ui'
 
+const TOKEN_KEY = 'yxtyg_token'
+
 // 创建axios实例
 const service = axios.create({
   baseURL: '/api',
@@ -13,6 +15,10 @@ const service = axios.create({
 // 请求拦截器
 service.interceptors.request.use(
   config => {
+    const token = localStorage.getItem(TOKEN_KEY)
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
     return config
   },
   error => {
@@ -24,8 +30,19 @@ service.interceptors.request.use(
 // 响应拦截器
 service.interceptors.response.use(
   response => {
+    if (response.config.responseType === 'blob') {
+      return response
+    }
     const res = response.data
     if (res.code !== 200) {
+      if (res.code === 401) {
+        localStorage.removeItem(TOKEN_KEY)
+        localStorage.removeItem('yxtyg_user')
+        localStorage.removeItem('yxtyg_permissions')
+        if (window.location.hash !== '#/login') {
+          window.location.href = '/#/login'
+        }
+      }
       // 业务错误（非200），使用顶部通知框提示，3秒后消失
       Notification({
         title: '提示',

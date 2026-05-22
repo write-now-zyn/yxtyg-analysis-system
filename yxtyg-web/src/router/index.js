@@ -5,8 +5,20 @@ Vue.use(VueRouter)
 
 const routes = [
   {
+    path: '/login',
+    name: 'Login',
+    component: () => import('../views/Login.vue'),
+    meta: { title: '登录', public: true }
+  },
+  {
     path: '/',
-    redirect: '/dashboard'
+    redirect: '/demand-workload'
+  },
+  {
+    path: '/demand-workload',
+    name: 'DemandWorkload',
+    component: () => import('../views/DemandWorkload.vue'),
+    meta: { title: '工作量核定', permission: 'demand:view' }
   },
   {
     path: '/dashboard',
@@ -57,6 +69,18 @@ const routes = [
     meta: { title: '智能体参数' }
   },
   {
+    path: '/users',
+    name: 'UserManagement',
+    component: () => import('../views/UserManagement.vue'),
+    meta: { title: '用户管理', permission: 'user:manage' }
+  },
+  {
+    path: '/roles',
+    name: 'RoleManagement',
+    component: () => import('../views/RoleManagement.vue'),
+    meta: { title: '角色权限', permission: 'role:manage' }
+  },
+  {
     path: '/smart-recommend',
     name: 'SmartRecommend',
     component: () => import('../views/SmartRecommend.vue'),
@@ -77,6 +101,19 @@ const router = new VueRouter({
 router.beforeEach((to, from, next) => {
   if (to.meta.title) {
     document.title = to.meta.title + ' - 一线体验官专项数据分析系统'
+  }
+  if (!to.meta.public && !localStorage.getItem('yxtyg_token')) {
+    next('/login')
+    return
+  }
+  const permissions = JSON.parse(localStorage.getItem('yxtyg_permissions') || '[]')
+  if (to.meta.permission && !permissions.includes(to.meta.permission)) {
+    next('/demand-workload')
+    return
+  }
+  if (to.path === '/login' && localStorage.getItem('yxtyg_token')) {
+    next('/demand-workload')
+    return
   }
   next()
 })

@@ -4,6 +4,8 @@
 -- 更新时间：2026-04-13
 -- =============================================
 
+SET NAMES utf8mb4;
+
 -- 创建数据库
 CREATE DATABASE IF NOT EXISTS yxtyg_db DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 
@@ -160,7 +162,180 @@ CREATE TABLE t_training_record (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='培训记录明细表';
 
 -- =============================================
--- 8. 大模型配置表
+-- 8. 系统角色表
+-- =============================================
+DROP TABLE IF EXISTS t_sys_role;
+CREATE TABLE t_sys_role (
+    id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    code VARCHAR(50) NOT NULL COMMENT '角色编码',
+    name VARCHAR(50) NOT NULL COMMENT '角色名称',
+    description VARCHAR(200) DEFAULT NULL COMMENT '角色说明',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_role_code (code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统角色表';
+
+-- =============================================
+-- 9. 系统权限表
+-- =============================================
+DROP TABLE IF EXISTS t_sys_permission;
+CREATE TABLE t_sys_permission (
+    id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    code VARCHAR(80) NOT NULL COMMENT '权限编码',
+    name VARCHAR(80) NOT NULL COMMENT '权限名称',
+    description VARCHAR(200) DEFAULT NULL COMMENT '权限说明',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_permission_code (code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统权限表';
+
+-- =============================================
+-- 10. 角色权限关联表
+-- =============================================
+DROP TABLE IF EXISTS t_sys_role_permission;
+CREATE TABLE t_sys_role_permission (
+    id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    role_code VARCHAR(50) NOT NULL COMMENT '角色编码',
+    permission_code VARCHAR(80) NOT NULL COMMENT '权限编码',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_role_permission (role_code, permission_code),
+    KEY idx_role_code (role_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色权限关联表';
+
+-- =============================================
+-- 11. 系统用户表
+-- =============================================
+DROP TABLE IF EXISTS t_sys_user;
+CREATE TABLE t_sys_user (
+    id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    username VARCHAR(50) NOT NULL COMMENT '登录用户名',
+    password VARCHAR(100) NOT NULL COMMENT 'BCrypt密码',
+    name VARCHAR(50) NOT NULL COMMENT '姓名',
+    role_code VARCHAR(50) NOT NULL COMMENT '角色编码',
+    phone VARCHAR(30) DEFAULT NULL COMMENT '电话',
+    email VARCHAR(100) DEFAULT NULL COMMENT '邮箱',
+    status TINYINT DEFAULT 1 COMMENT '状态 1-启用 0-禁用',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_username (username),
+    KEY idx_role_code (role_code),
+    KEY idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统用户表';
+
+-- =============================================
+-- 12. 登录会话表
+-- =============================================
+DROP TABLE IF EXISTS t_sys_session;
+CREATE TABLE t_sys_session (
+    id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    token VARCHAR(64) NOT NULL COMMENT '访问令牌',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    expires_at DATETIME NOT NULL COMMENT '过期时间',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_token (token),
+    KEY idx_user_id (user_id),
+    KEY idx_expires_at (expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='登录会话表';
+
+-- =============================================
+-- 13. 工作量核定需求表
+-- =============================================
+DROP TABLE IF EXISTS t_demand_workload;
+CREATE TABLE t_demand_workload (
+    id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    demand_no VARCHAR(50) NOT NULL COMMENT '需求编号',
+    demand_name VARCHAR(200) NOT NULL COMMENT '需求名称',
+    demand_description TEXT COMMENT '需求描述',
+    product_manager_id BIGINT NOT NULL COMMENT '产品经理用户ID',
+    product_manager_name VARCHAR(50) NOT NULL COMMENT '产品经理姓名',
+    system_name VARCHAR(100) NOT NULL COMMENT '归属系统',
+    initial_workload DECIMAL(10,2) NOT NULL COMMENT '初核工作量',
+    initial_amount DECIMAL(12,2) DEFAULT 0 COMMENT '初核金额',
+    final_workload DECIMAL(10,2) DEFAULT NULL COMMENT '最终核定工作量',
+    reduction_workload DECIMAL(10,2) DEFAULT 0 COMMENT '核减工作量',
+    status VARCHAR(20) NOT NULL DEFAULT '待填写' COMMENT '需求状态：待填写、已填写、已核定',
+    remark VARCHAR(500) DEFAULT NULL COMMENT '备注',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_demand_no (demand_no),
+    KEY idx_product_manager (product_manager_id),
+    KEY idx_system_name (system_name),
+    KEY idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工作量核定需求表';
+
+-- =============================================
+-- 14. 工作量催办记录表
+-- =============================================
+DROP TABLE IF EXISTS t_demand_reminder;
+CREATE TABLE t_demand_reminder (
+    id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    demand_id BIGINT NOT NULL COMMENT '需求ID',
+    reminder_content VARCHAR(500) DEFAULT NULL COMMENT '催办内容',
+    reminder_by BIGINT NOT NULL COMMENT '催办人用户ID',
+    reminder_to BIGINT NOT NULL COMMENT '被催办人用户ID',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '催办时间',
+    PRIMARY KEY (id),
+    KEY idx_demand_id (demand_id),
+    KEY idx_reminder_to (reminder_to)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工作量催办记录表';
+
+-- =============================================
+-- 15. 系统通知表
+-- =============================================
+DROP TABLE IF EXISTS t_notification;
+CREATE TABLE t_notification (
+    id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    recipient_user_id BIGINT NOT NULL COMMENT '接收人用户ID',
+    title VARCHAR(100) NOT NULL COMMENT '通知标题',
+    content VARCHAR(500) NOT NULL COMMENT '通知内容',
+    biz_type VARCHAR(50) DEFAULT NULL COMMENT '业务类型',
+    biz_id BIGINT DEFAULT NULL COMMENT '业务ID',
+    is_read TINYINT DEFAULT 0 COMMENT '是否已读 0-否 1-是',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    read_at DATETIME DEFAULT NULL COMMENT '阅读时间',
+    PRIMARY KEY (id),
+    KEY idx_recipient_read (recipient_user_id, is_read),
+    KEY idx_biz (biz_type, biz_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统通知表';
+
+-- =============================================
+-- 初始化用户、角色、权限和工作量样例数据
+-- 默认密码均为：123456
+-- =============================================
+INSERT INTO t_sys_role (code, name, description) VALUES
+('SYSTEM_ADMIN', '系统管理员', '管理用户、角色、权限和系统配置'),
+('DEV_ADMIN', '开发管理员', '导入需求、核定工作量、催办产品经理'),
+('PRODUCT_MANAGER', '产品经理', '查看本人需求并填写最终核定工作量');
+
+INSERT INTO t_sys_permission (code, name, description) VALUES
+('demand:view', '查看工作量需求', '查看工作量核定需求列表和详情'),
+('demand:manage', '管理工作量需求', '新增、编辑、删除、导入和导出工作量需求'),
+('demand:fill', '填写最终工作量', '产品经理填写最终核定工作量'),
+('demand:confirm', '核定工作量', '开发管理员确认工作量核定结果'),
+('demand:remind', '催办需求', '对待填写需求发起催办'),
+('user:manage', '用户管理', '维护系统用户'),
+('role:manage', '角色权限管理', '维护角色权限配置'),
+('notification:view', '查看通知', '查看本人通知');
+
+INSERT INTO t_sys_role_permission (role_code, permission_code) VALUES
+('SYSTEM_ADMIN', 'demand:view'), ('SYSTEM_ADMIN', 'demand:manage'), ('SYSTEM_ADMIN', 'demand:fill'), ('SYSTEM_ADMIN', 'demand:confirm'), ('SYSTEM_ADMIN', 'demand:remind'), ('SYSTEM_ADMIN', 'user:manage'), ('SYSTEM_ADMIN', 'role:manage'), ('SYSTEM_ADMIN', 'notification:view'),
+('DEV_ADMIN', 'demand:view'), ('DEV_ADMIN', 'demand:manage'), ('DEV_ADMIN', 'demand:confirm'), ('DEV_ADMIN', 'demand:remind'), ('DEV_ADMIN', 'notification:view'),
+('PRODUCT_MANAGER', 'demand:view'), ('PRODUCT_MANAGER', 'demand:fill'), ('PRODUCT_MANAGER', 'notification:view');
+
+INSERT INTO t_sys_user (username, password, name, role_code, phone, email, status) VALUES
+('admin', '$2a$10$n63oMzDv8yCtAQVreNZlOuQUCjdAyyrHl2gEPPXbVDWEL7hDrros6', '系统管理员', 'SYSTEM_ADMIN', '13800000000', 'admin@example.com', 1),
+('devadmin', '$2a$10$n63oMzDv8yCtAQVreNZlOuQUCjdAyyrHl2gEPPXbVDWEL7hDrros6', '开发管理员', 'DEV_ADMIN', '13800000001', 'devadmin@example.com', 1),
+('pm_zhang', '$2a$10$n63oMzDv8yCtAQVreNZlOuQUCjdAyyrHl2gEPPXbVDWEL7hDrros6', '张产品', 'PRODUCT_MANAGER', '13800000002', 'pm_zhang@example.com', 1),
+('pm_li', '$2a$10$n63oMzDv8yCtAQVreNZlOuQUCjdAyyrHl2gEPPXbVDWEL7hDrros6', '李产品', 'PRODUCT_MANAGER', '13800000003', 'pm_li@example.com', 1);
+
+INSERT INTO t_demand_workload (demand_no, demand_name, demand_description, product_manager_id, product_manager_name, system_name, initial_workload, initial_amount, final_workload, reduction_workload, status, remark) VALUES
+('REQ-202605-001', '智能分单规则优化', '优化需求提单的智能分单策略，提升推荐准确率。', 3, '张产品', '一线体验官平台', 12.00, 9600.00, NULL, 0.00, '待填写', NULL),
+('REQ-202605-002', '转培上报导出增强', '增加转培数据按地市和月份聚合导出能力。', 4, '李产品', '培训管理模块', 8.00, 6400.00, 6.50, 1.50, '已填写', '已完成产品侧填写'),
+('REQ-202605-003', '体验官画像字段补齐', '补充体验官角色和接口人维度的数据维护能力。', 3, '张产品', '体验官管理模块', 5.00, 4000.00, 5.00, 0.00, '已核定', '无需核减');
+
+-- =============================================
+-- 16. 大模型配置表
 -- =============================================
 DROP TABLE IF EXISTS t_model_config;
 CREATE TABLE t_model_config (
@@ -180,7 +355,7 @@ CREATE TABLE t_model_config (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='大模型配置表';
 
 -- =============================================
--- 9. 向量化模型配置表
+-- 17. 向量化模型配置表
 -- =============================================
 DROP TABLE IF EXISTS t_embedding_config;
 CREATE TABLE t_embedding_config (
@@ -201,7 +376,7 @@ CREATE TABLE t_embedding_config (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='向量化模型配置表';
 
 -- =============================================
--- 10. 智能体配置表
+-- 18. 智能体配置表
 -- =============================================
 DROP TABLE IF EXISTS t_agent_config;
 CREATE TABLE t_agent_config (
@@ -251,7 +426,7 @@ INSERT INTO t_agent_config (agent_code, agent_name, description, temperature, to
 时间格式处理：
 - 转换为当年日期，格式为yyyy-MM-dd
 只输出JSON数组：[{"city":"","organizer":"","trainingContent":"","trainingTime":"","coverageCount":""}]',
-'{content}', 2048),
+'{content}', 2048);
 
 -- =============================================
 -- MySQL 配置建议

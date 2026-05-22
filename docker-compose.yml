@@ -1,0 +1,102 @@
+name: yxtyg-dev
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: yxtyg-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-yxtyg_db}
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./yxtyg-admin/src/main/resources/db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_general_ci
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks:
+      - yxtyg-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: yxtyg-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    networks:
+      - yxtyg-net
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+    container_name: yxtyg-backend
+    working_dir: /app/yxtyg-admin
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-yxtyg_db}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-root}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      AI_OLLAMA_URL: ${AI_OLLAMA_URL:-http://gugang.i234.me:11868}
+      AI_OLLAMA_MODEL: ${AI_OLLAMA_MODEL:-qwen3:8b}
+    volumes:
+      - .:/app
+      - maven-cache:/root/.m2
+      - backend-vectors:/app/yxtyg-admin/data/vectors
+      - backend-logs:/app/yxtyg-admin/logs
+    ports:
+      - "${BACKEND_HOST_PORT:-18010}:10010"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - yxtyg-net
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+    container_name: yxtyg-frontend
+    working_dir: /app/yxtyg-web
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      VUE_DEV_SERVER_PORT: 10011
+      VUE_APP_API_PROXY_TARGET: http://backend:10010
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - .:/app
+      - web-node-modules:/app/yxtyg-web/node_modules
+    ports:
+      - "${FRONTEND_HOST_PORT:-18011}:10011"
+    depends_on:
+      - backend
+    networks:
+      - yxtyg-net
+
+networks:
+  yxtyg-net:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  redis-data:
+  maven-cache:
+  web-node-modules:
+  backend-vectors:
+  backend-logs:

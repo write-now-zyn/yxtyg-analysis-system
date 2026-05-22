@@ -17,9 +17,9 @@ spring:
   application:
     name: yxtyg-admin
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/yxtyg_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username: root
-    password: 123456
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://127.0.0.1:3306/yxtyg_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:123456}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       minimum-idle: 5
@@ -66,9 +66,9 @@ logging:
 # AI配置
 ai:
   ollama:
-    url: http://gugang.i234.me:11868
+    url: ${AI_OLLAMA_URL:http://gugang.i234.me:11868}
     # url: http://localhost:11434
-    model: qwen3:8b
+    model: ${AI_OLLAMA_MODEL:qwen3:8b}
 
 recommend:
   top-k: 10
